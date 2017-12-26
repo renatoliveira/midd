@@ -37,9 +37,7 @@ def generate(similar_images: dict):
     <html>
         <head>
             <style>
-                tr:nth-child(2n) {
-                    background-color: #f2f2f2;
-                }
+                tr:nth-child(2n) {{background-color: #f2f2f2;}}
             </style>
         </head>
     <body>
