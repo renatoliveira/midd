@@ -4,7 +4,7 @@ Magical Image Duplicate Detector
 This is a simple Python program to detect duplicate of images in a directory.
 
 ```
-python main.py <directory> <certainty>
+python main.py --directory <directory>
 ```
 
 Where `directory` is the path of the folder you want to run the script on. And `certainty` is the percentage of, well, certainty, that the script will consider two images identical.
