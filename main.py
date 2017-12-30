@@ -4,44 +4,54 @@ Main thing.
 import sys
 import os
 import glob
+import click
 from tqdm import tqdm
 from PIL import Image
 import conversion
 import reporting
 
-if __name__ == '__main__':
+@click.command()
+@click.option('--directory', default=os.path.curdir, help='Directory to run the script.')
+@click.option('--sample_size', default=16, help='Image sample size to generate the hashes. The\
+ bigger, the more precise, and also the slower.')
+@click.option('--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure two\
+ images are equal.')
+
+def run(directory: str, sample_size: int, accuracy: int):
     '''
-    1 = folder path
-    2 = % of certainty
+    Run the main program.
     '''
-    CERTAINTY = int(sys.argv[2])
-    if os.path.isdir(sys.argv[1]):
-        IMAGES = glob.glob(sys.argv[1] + '*.png') + glob.glob(sys.argv[1] + '*.jpg')
-        print('Reading {} images...'.format(len(IMAGES)))
-        RESULTS = {}
-        IMAGES = [os.path.abspath(image_path) for image_path in IMAGES]
-        for image in tqdm(IMAGES):
-            val = conversion.build_map(
-                conversion.resize(
-                    conversion.to_grayscale(Image.open(image)), 16
+    if os.path.isdir(directory):
+        images = glob.glob(directory + '\\*.png') + glob.glob(directory + '\\*.jpg')
+        print('Reading {} images...'.format(len(images)))
+        results = {}
+        images = [os.path.abspath(image_path) for image_path in images]
+        for image in tqdm(images):
+            val = conversion.generate_hash(
+                conversion.resize_image(
+                    conversion.to_grayscale(Image.open(image)), sample_size
                 )
             )
             image = ':\\'.join(image.split(':'))
-            RESULTS[image] = val
-        SIMILAR_IMAGES = {}
-        for x in tqdm(RESULTS):
-            for y in RESULTS:
+            results[image] = val
+        similar_images = {}
+        for x in tqdm(results):
+            for y in results:
                 if x != y:
-                    if x not in SIMILAR_IMAGES:
-                        SIMILAR_IMAGES[x] = []
-                    if y not in SIMILAR_IMAGES:
-                        SIMILAR_IMAGES[y] = []
-                    if x in SIMILAR_IMAGES[y] or y in SIMILAR_IMAGES[x]:
+                    if x not in similar_images:
+                        similar_images[x] = []
+                    if y not in similar_images:
+                        similar_images[y] = []
+                    if x in similar_images[y] or y in similar_images[x]:
                         break
-                    check = conversion.verify(RESULTS[x], RESULTS[y])
-                    if check > CERTAINTY:
-                        SIMILAR_IMAGES[x].append(y)
-                        SIMILAR_IMAGES[y].append(x)
-        reporting.generate(SIMILAR_IMAGES)
+                    check = conversion.verify(results[x], results[y])
+                    if check > accuracy:
+                        similar_images[x].append(y)
+                        similar_images[y].append(x)
+        reporting.generate(similar_images)
     else:
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
+
+if __name__ == '__main__':
+    #pylint: disable=E1120
+    run()

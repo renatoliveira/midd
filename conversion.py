@@ -1,7 +1,8 @@
 """
 Converts an image to grayscale
 """
-import sys
+import click
+from tqdm import tqdm
 from PIL import Image
 
 def to_grayscale(img: Image):
@@ -11,14 +12,14 @@ def to_grayscale(img: Image):
     '''
     return img.convert('L')
 
-def resize(img: Image, sqsize: int):
+def resize_image(img: Image, sqsize: int):
     '''
     Resizes the image to a common ratio and pixel format.
     '''
     img = img.resize((sqsize+1, sqsize), Image.BICUBIC)
     return img
 
-def build_map(img: Image):
+def generate_hash(img: Image):
     '''
     Builds the true/false map, which is turned into the binary sequence
     which is used to compare images
@@ -54,16 +55,49 @@ def verify(str1: str, str2: str):
     print('Lists with different sizes. Aborting...')
     return -1
 
+@click.command()
+@click.option('--file', help='Input image file.')
+@click.option('--output', default='output.jpeg', help='Name of the output file. \
+# Defaults to "output.jpeg"')
+@click.option('--resize', default=False, help='Do the resize thing.', is_flag=True)
+@click.option('--grayscale', default=False, help='Convert file to grayscale.', is_flag=True)
+@click.option('--buildhash', default=False, help='Generate the image\'s hash.', is_flag=True)
+@click.option('--sample_size', default=16, help='Image sample size')
+@click.option('--dryrun', default=False, help='Dry run. Won\'t save files or generate reports.',
+              is_flag=True)
+@click.option('--check', default=False, help='Check two or more files.', is_flag=True)
+@click.argument('files', nargs=-1)
+def run(file, output, grayscale, buildhash, resize, sample_size, dryrun, check, files):
+    '''
+    Run with command line arguments
+    '''
+    if not check:
+        image_file = Image.open(file)
+        if grayscale:
+            image_file = to_grayscale(image_file)
+        if resize:
+            image_file = resize_image(image_file, sample_size)
+        if buildhash:
+            file_hash = generate_hash(image_file)
+            print(file_hash)
+        if not dryrun:
+            image_file.save(output, 'jpeg')
+    else:
+        hashes = {}
+        results = []
+        for filename in files:
+            hashes[filename] = generate_hash(
+                resize_image(to_grayscale(Image.open(filename)), sample_size)
+            )
+        for x in tqdm(hashes):
+            for y in hashes:
+                if x != y:
+                    results.append((x, y, verify(hashes[x], hashes[y])))
+        for result in results:
+            print('{} is {}% equal to {}.'.format(
+                result[0], result[2], result[1]
+            ))
+
 if __name__ == '__main__':
-    if 'gs' in sys.argv and 'rs' in sys.argv and 'bm' in sys.argv:
-        build_map(resize(to_grayscale(Image.open(sys.argv[4])), 16))
-    elif 'gs' in sys.argv and 'rs' in sys.argv:
-        resize(to_grayscale(Image.open(sys.argv[3])), 16).save('output.jpeg', 'jpeg')
-    elif sys.argv[1] == 'gs':
-        to_grayscale(Image.open(sys.argv[2])).save('output.jpeg', 'jpeg')
-    elif sys.argv[1] == 'rs':
-        resize(Image.open(sys.argv[2]), 16).save('output.jpeg', 'jpeg')
-    elif sys.argv[1] == 'bm':
-        build_map(Image.open(sys.argv[2]))
-    elif sys.argv[1] == 'check':
-        verify(sys.argv[2], sys.argv[3])
+    #pylint: disable=E1120
+    run()
