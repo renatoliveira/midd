@@ -67,32 +67,32 @@ def verify(str1: str, str2: str):
               is_flag=True)
 @click.option('--check', default=False, help='Check two or more files.', is_flag=True)
 @click.argument('files', nargs=-1)
-def run(file, output, grayscale, buildhash, resize, sample_size, dryrun, check, files):
+def run(**kwargs):
     '''
     Run with command line arguments
     '''
-    if not check:
-        image_file = Image.open(file)
-        if grayscale:
-            image_file = to_grayscale(image_file)
-        if resize:
-            image_file = resize_image(image_file, sample_size)
-        if buildhash:
-            file_hash = generate_hash(image_file)
-            print(file_hash)
-        if not dryrun:
-            image_file.save(output, 'jpeg')
+    print(kwargs['check'])
+    if not kwargs['check']:
+        kwargs['image_file'] = Image.open(kwargs['file'])
+        if kwargs['grayscale']:
+            kwargs['image_file'] = to_grayscale(kwargs['image_file'])
+        if kwargs['resize']:
+            kwargs['image_file'] = resize_image(kwargs['image_file'], kwargs['sample_size'])
+        if kwargs['buildhash']:
+            print(generate_hash(kwargs['image_file']))
+        if not kwargs['dryrun']:
+            kwargs['image_file'].save(kwargs['output'], 'jpeg')
     else:
         hashes = {}
         results = []
-        for filename in files:
+        for filename in kwargs['files']:
             hashes[filename] = generate_hash(
-                resize_image(to_grayscale(Image.open(filename)), sample_size)
+                resize_image(to_grayscale(Image.open(filename)), kwargs['sample_size'])
             )
-        for x in tqdm(hashes):
-            for y in hashes:
-                if x != y:
-                    results.append((x, y, verify(hashes[x], hashes[y])))
+        for image_x in tqdm(hashes):
+            for image_y in hashes:
+                if image_x != image_y:
+                    results.append((image_x, image_y, verify(hashes[image_x], hashes[image_y])))
         for result in results:
             print('{} is {}% equal to {}.'.format(
                 result[0], result[2], result[1]

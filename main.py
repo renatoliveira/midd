@@ -35,19 +35,19 @@ def run(directory: str, sample_size: int, accuracy: int):
             image = ':\\'.join(image.split(':'))
             results[image] = val
         similar_images = {}
-        for x in tqdm(results):
-            for y in results:
-                if x != y:
-                    if x not in similar_images:
-                        similar_images[x] = []
-                    if y not in similar_images:
-                        similar_images[y] = []
-                    if x in similar_images[y] or y in similar_images[x]:
+        for image_x in tqdm(results):
+            for image_y in results:
+                if image_x != image_y:
+                    if image_x not in similar_images:
+                        similar_images[image_x] = []
+                    if image_y not in similar_images:
+                        similar_images[image_y] = []
+                    if image_x in similar_images[image_y] or image_y in similar_images[image_x]:
                         break
-                    check = conversion.verify(results[x], results[y])
+                    check = conversion.verify(results[image_x], results[image_y])
                     if check > accuracy:
-                        similar_images[x].append(y)
-                        similar_images[y].append(x)
+                        similar_images[image_x].append(image_y)
+                        similar_images[image_y].append(image_x)
         reporting.generate(similar_images)
     else:
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
