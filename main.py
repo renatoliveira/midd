@@ -3,6 +3,7 @@ Main thing.
 """
 import sys
 import os
+import json
 import glob
 import click
 from tqdm import tqdm
@@ -10,14 +11,22 @@ from PIL import Image
 import conversion
 import reporting
 
-@click.command()
-@click.option('--directory', default=os.path.curdir, help='Directory to run the script.')
-@click.option('--sample_size', default=16, help='Image sample size to generate the hashes. The\
- bigger, the more precise, and also the slower.')
-@click.option('--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure two\
- images are equal.')
+def save_json(images: dict):
+    '''
+    Saves image hashes in a JSON file.
+    '''
+    with open('hashdata.json', 'w') as json_file:
+        json.dump(images, json_file)
 
-def run(directory: str, sample_size: int, accuracy: int):
+@click.command()
+@click.option('-dir', '--directory', default=os.path.curdir, help='Directory to run the script.')
+@click.option('-s', '--sample_size', default=16, help='Image sample size to generate the hashes. The\
+ bigger, the more precise, and also the slower.')
+@click.option('-a', '--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure two\
+ images are equal.')
+@click.option('-j', '--json', 'savejson', default=False, help='Save hash data to a json file.', is_flag=True)
+
+def run(directory: str, sample_size: int, accuracy: int, savejson: bool):
     '''
     Run the main program.
     '''
@@ -49,6 +58,8 @@ def run(directory: str, sample_size: int, accuracy: int):
                         similar_images[image_x].append(image_y)
                         similar_images[image_y].append(image_x)
         reporting.generate(similar_images)
+        if savejson:
+            save_json(results)
     else:
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
 
