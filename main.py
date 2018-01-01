@@ -20,11 +20,12 @@ def save_json(images: dict):
 
 @click.command()
 @click.option('-dir', '--directory', default=os.path.curdir, help='Directory to run the script.')
-@click.option('-s', '--sample_size', default=16, help='Image sample size to generate the hashes. The\
- bigger, the more precise, and also the slower.')
-@click.option('-a', '--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure two\
- images are equal.')
-@click.option('-j', '--json', 'savejson', default=False, help='Save hash data to a json file.', is_flag=True)
+@click.option('-s', '--sample_size', default=16, help='Image sample size to generate the hashes.\
+ The bigger, the more precise, and also the slower.')
+@click.option('-a', '--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure\
+ two images are equal.')
+@click.option('-j', '--json', 'savejson', default=False, help='Save hash data to a json file.',
+              is_flag=True)
 
 def run(directory: str, sample_size: int, accuracy: int, savejson: bool):
     '''
