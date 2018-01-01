@@ -16,7 +16,7 @@ def save_json(images: dict):
     Saves image hashes in a JSON file.
     '''
     with open('hashdata.json', 'w') as json_file:
-        json.dump(images, json_file)
+        json.dump(images, json_file, indent=True)
 
 @click.command()
 @click.option('-dir', '--directory', default=os.path.curdir, help='Directory to run the script.')
