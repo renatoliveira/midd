@@ -20,26 +20,32 @@ def save_json(images: dict):
 
 @click.command()
 @click.option('-dir', '--directory', default=os.path.curdir, help='Directory to run the script.')
-@click.option('-s', '--sample_size', default=16, help='Image sample size to generate the hashes.\
+@click.option('-s', '--samplesize', default=16, help='Image sample size to generate the hashes.\
  The bigger, the more precise, and also the slower.')
 @click.option('-a', '--accuracy', default=95, help='Accuracy level. Defaults to 95 (as in 95% sure\
  two images are equal.')
 @click.option('-j', '--json', 'savejson', default=False, help='Save hash data to a json file.',
               is_flag=True)
-
-def run(directory: str, sample_size: int, accuracy: int, savejson: bool):
+@click.option('-r', '--reset', 'reset', default=False, help='Analyzes every image even if\
+ hashdata.json is present. If not used, images in the hashdata.json won\'t be analyzed again, but\
+ their hashes will be compared normally.', is_flag=True)
+@click.option('-nr', '--no-report', 'noreport', default=False, help='Disables report generation.',
+              is_flag=True)
+def run(**kwargs):
     '''
     Run the main program.
     '''
-    if os.path.isdir(directory):
-        images = glob.glob(directory + '\\*.png') + glob.glob(directory + '\\*.jpg')
+    if os.path.isdir(kwargs['directory']):
+        images = []
+        for image_extension in ['png', 'jpg']:
+            images += glob.glob(kwargs['directory'] + '\\*.{}'.format(image_extension))
         print('Reading {} images...'.format(len(images)))
         results = {}
         images = [os.path.abspath(image_path) for image_path in images]
         for image in tqdm(images):
             val = conversion.generate_hash(
                 conversion.resize_image(
-                    conversion.to_grayscale(Image.open(image)), sample_size
+                    conversion.to_grayscale(Image.open(image)), kwargs['samplesize']
                 )
             )
             image = ':\\'.join(image.split(':'))
@@ -55,11 +61,12 @@ def run(directory: str, sample_size: int, accuracy: int, savejson: bool):
                     if image_x in similar_images[image_y] or image_y in similar_images[image_x]:
                         break
                     check = conversion.verify(results[image_x], results[image_y])
-                    if check > accuracy:
+                    if check > kwargs['accuracy']:
                         similar_images[image_x].append(image_y)
                         similar_images[image_y].append(image_x)
-        reporting.generate(similar_images)
-        if savejson:
+        if not kwargs['noreport']:
+            reporting.generate(similar_images)
+        if kwargs['savejson']:
             save_json(results)
     else:
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
