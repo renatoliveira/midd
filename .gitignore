@@ -1,3 +1,4 @@
 middenv
 .vscode/
 __pycache__/
+hashdata.json
