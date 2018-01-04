@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import glob
+import itertools
 import click
 from tqdm import tqdm
 from PIL import Image
@@ -16,7 +17,66 @@ def save_json(images: dict):
     Saves image hashes in a JSON file.
     '''
     with open('hashdata.json', 'w') as json_file:
-        json.dump(images, json_file, indent=True)
+        content = {}
+        for k, val in images.items():
+            key = k.replace('\\', '/')
+            content[key] = val
+        json.dump(content, json_file, indent=True)
+
+def get_hashes_from_file():
+    '''
+    Gets hashes from json file, if it exists.
+    '''
+    hashes = None
+    if os.path.isfile(os.path.curdir + '\\hashdata.json'):
+        with open('hashdata.json', 'r') as json_file:
+            hashes = json.load(json_file)
+    else:
+        hashes = {}
+    return hashes
+
+def remove_repeated_hashes(images_read: list, hashes_from_file: list):
+    '''
+    Remove repeated hashes so the script doesn't need to generate
+    again the hashes we already have in the hashdata.json file.
+    '''
+    result = []
+    for image in (img.replace('\\', '/') for img in images_read):
+        if not hashes_from_file or image not in hashes_from_file:
+            result.append(image)
+    return result
+
+def get_image_hashes(images: list, sample_size: int):
+    '''
+    Get the hashes for the specified images, using the provided
+    sample size.
+    '''
+    result = {}
+    for image in tqdm(images):
+        val = conversion.generate_hash(
+            conversion.resize_image(
+                conversion.to_grayscale(Image.open(image)), sample_size
+            )
+        )
+        result[image] = val
+    return result
+
+def compare_hashes(images: dict, precision: int):
+    '''
+    Compares the hashes.
+    '''
+    similar_images = {}
+    print('Comparing hashes...')
+    for sample_a, sample_b in itertools.combinations(images.keys(), 2):
+        match_result = conversion.verify(images[sample_a], images[sample_b])
+        if match_result >= precision:
+            if sample_a not in similar_images:
+                similar_images[sample_a] = []
+            if sample_b not in similar_images:
+                similar_images[sample_b] = []
+            similar_images[sample_a].append(sample_b)
+            similar_images[sample_b].append(sample_a)
+    return similar_images
 
 @click.command()
 @click.option('-dir', '--directory', default=os.path.curdir, help='Directory to run the script.')
@@ -40,34 +100,17 @@ def run(**kwargs):
         for image_extension in ['png', 'jpg']:
             images += glob.glob(kwargs['directory'] + '\\*.{}'.format(image_extension))
         print('Reading {} images...'.format(len(images)))
-        results = {}
+        existing_hashes = get_hashes_from_file()
         images = [os.path.abspath(image_path) for image_path in images]
-        for image in tqdm(images):
-            val = conversion.generate_hash(
-                conversion.resize_image(
-                    conversion.to_grayscale(Image.open(image)), kwargs['samplesize']
-                )
-            )
-            image = ':\\'.join(image.split(':'))
-            results[image] = val
-        similar_images = {}
-        for image_x in tqdm(results):
-            for image_y in results:
-                if image_x != image_y:
-                    if image_x not in similar_images:
-                        similar_images[image_x] = []
-                    if image_y not in similar_images:
-                        similar_images[image_y] = []
-                    if image_x in similar_images[image_y] or image_y in similar_images[image_x]:
-                        break
-                    check = conversion.verify(results[image_x], results[image_y])
-                    if check > kwargs['accuracy']:
-                        similar_images[image_x].append(image_y)
-                        similar_images[image_y].append(image_x)
+        processed_images = get_image_hashes(
+            remove_repeated_hashes(images, existing_hashes), kwargs['samplesize']
+        )
+        combined_images = {**existing_hashes, **processed_images}
+        similar_images = compare_hashes(combined_images, kwargs['accuracy'])
         if not kwargs['noreport']:
             reporting.generate(similar_images)
         if kwargs['savejson']:
-            save_json(results)
+            save_json(combined_images)
     else:
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
 
