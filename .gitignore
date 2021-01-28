@@ -2,3 +2,8 @@ middenv
 .vscode/
 __pycache__/
 hashdata.json
+virtual_environment/
+dist/
+build/
+midd.egg-info
+.pypirc

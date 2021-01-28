@@ -9,8 +9,8 @@ import itertools
 import click
 from tqdm import tqdm
 from PIL import Image
-import conversion
-import reporting
+from midd import conversion
+from midd import reporting
 
 def save_json(images: dict):
     '''
@@ -98,7 +98,9 @@ def run(**kwargs):
     if os.path.isdir(kwargs['directory']):
         images = []
         for image_extension in ['png', 'jpg']:
-            images += glob.glob(kwargs['directory'] + '\\*.{}'.format(image_extension))
+            print(kwargs['directory'] + '\\*.{}'.format(image_extension))
+            images += glob.glob(kwargs['directory'] + '*.{}'.format(image_extension))
+
         print('Reading {} images...'.format(len(images)))
         existing_hashes = get_hashes_from_file()
         images = [os.path.abspath(image_path) for image_path in images]
@@ -115,5 +117,4 @@ def run(**kwargs):
         print('[{}] is not a valid directory.'.format(sys.argv[1]))
 
 if __name__ == '__main__':
-    #pylint: disable=E1120
     run()
