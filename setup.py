@@ -26,7 +26,7 @@ setuptools.setup(
         "repository_images/*"
     ],
     install_requires=[
-        "Pillow==8.3.2",
+        "Pillow==9.0.0",
         "tqdm==4.56.0",
         "click>=6",
     ],
