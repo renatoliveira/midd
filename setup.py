@@ -27,7 +27,7 @@ setuptools.setup(
     ],
     install_requires=[
         "Pillow==10.3.0",
-        "tqdm==4.56.0",
+        "tqdm==4.66.3",
         "click>=6",
     ],
     python_requires=">=3.6"
